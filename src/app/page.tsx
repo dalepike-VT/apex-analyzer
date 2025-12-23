@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { YearSelect, MeetingSelect, SessionSelect } from '@/components/selectors';
-import { SessionInfo, LapTimesTable, SectorChart, SpeedTrace } from '@/components/analysis';
+import { SessionInfo, LapTimesTable, SectorChart, SpeedTrace, CornerAnalysis } from '@/components/analysis';
 import { TrackMap } from '@/components/track';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WelcomeGuide } from '@/components/WelcomeGuide';
 import type { Meeting, Session } from '@/lib/openf1';
 
 export default function Home() {
@@ -42,32 +42,76 @@ export default function Home() {
     setSelectedCorner(corner);
   };
 
+  // Determine current step for welcome guide
+  const getCurrentStep = (): 'year' | 'meeting' | 'session' | 'ready' => {
+    if (!year) return 'year';
+    if (!meetingKey) return 'meeting';
+    if (!sessionKey) return 'session';
+    return 'ready';
+  };
+
+  const currentStep = getCurrentStep();
+  const showWelcome = currentStep !== 'ready';
+
   return (
     <main className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
+      <header className="border-b bg-card sticky top-0 z-50 shadow-sm">
+        <div className="container mx-auto px-4 py-3">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Apex Analyzer</h1>
-              <p className="text-muted-foreground text-sm">
-                F1 Corner-by-Corner Performance Analysis
-              </p>
+            {/* Logo & Title */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-md">
+                <svg
+                  className="w-6 h-6 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-xl font-bold tracking-tight">Apex Analyzer</h1>
+                <p className="text-muted-foreground text-xs">
+                  F1 Performance Analysis
+                </p>
+              </div>
             </div>
 
-            {/* Selectors */}
-            <div className="flex flex-wrap items-center gap-2">
-              <YearSelect value={year} onChange={handleYearChange} />
-              <MeetingSelect
-                year={year}
-                value={meetingKey}
-                onChange={handleMeetingChange}
-              />
-              <SessionSelect
-                meetingKey={meetingKey}
-                value={sessionKey}
-                onChange={handleSessionChange}
-              />
+            {/* Selectors with labels */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-col gap-0.5">
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                  Season
+                </label>
+                <YearSelect value={year} onChange={handleYearChange} />
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                  Grand Prix
+                </label>
+                <MeetingSelect
+                  year={year}
+                  value={meetingKey}
+                  onChange={handleMeetingChange}
+                />
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                  Session
+                </label>
+                <SessionSelect
+                  meetingKey={meetingKey}
+                  value={sessionKey}
+                  onChange={handleSessionChange}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -75,85 +119,67 @@ export default function Home() {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6 space-y-6">
-        {/* Session Info Banner */}
-        <SessionInfo meeting={selectedMeeting} session={selectedSession} />
+        {showWelcome ? (
+          /* Welcome/Onboarding State */
+          <WelcomeGuide step={currentStep} />
+        ) : (
+          /* Analysis Content */
+          <>
+            {/* Session Info Banner */}
+            <SessionInfo meeting={selectedMeeting} session={selectedSession} />
 
-        {/* Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Track Map */}
-          <div className="lg:col-span-2">
-            <TrackMap
-              sessionKey={sessionKey}
-              onCornerSelect={handleCornerSelect}
-            />
-          </div>
+            {/* Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Track Map */}
+              <div className="lg:col-span-2">
+                <TrackMap
+                  sessionKey={sessionKey}
+                  onCornerSelect={handleCornerSelect}
+                />
+              </div>
 
-          {/* Corner Analysis */}
-          <div>
-            <Card className="h-[450px]">
-              <CardHeader>
-                <CardTitle>
-                  {selectedCorner
-                    ? `Corner ${selectedCorner} Analysis`
-                    : 'Corner Analysis'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {sessionKey ? (
-                  selectedCorner ? (
-                    <div className="space-y-4">
-                      <p className="text-sm text-muted-foreground">
-                        Analyzing Turn {selectedCorner}
-                      </p>
-                      <div className="text-xs text-muted-foreground">
-                        <p>Corner-specific telemetry analysis coming soon:</p>
-                        <ul className="list-disc list-inside mt-2 space-y-1">
-                          <li>Entry speed comparison</li>
-                          <li>Minimum apex speed</li>
-                          <li>Exit speed & acceleration</li>
-                          <li>Braking point analysis</li>
-                          <li>Racing line comparison</li>
-                        </ul>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground text-sm">
-                      Select a driver on the track map, then click a corner marker
-                      to view detailed analysis
-                    </p>
-                  )
-                ) : (
-                  <p className="text-muted-foreground text-sm">
-                    No session selected
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+              {/* Corner Analysis */}
+              <div className="h-[450px]">
+                <CornerAnalysis
+                  sessionKey={sessionKey}
+                  selectedCorner={selectedCorner}
+                />
+              </div>
+            </div>
 
-        {/* Lap Times Table */}
-        <LapTimesTable sessionKey={sessionKey} />
+            {/* Lap Times Table */}
+            <LapTimesTable sessionKey={sessionKey} />
 
-        {/* Sector Comparison Chart */}
-        <SectorChart sessionKey={sessionKey} />
+            {/* Sector Comparison Chart */}
+            <SectorChart sessionKey={sessionKey} />
 
-        {/* Speed Trace Comparison */}
-        <SpeedTrace sessionKey={sessionKey} />
+            {/* Speed Trace Comparison */}
+            <SpeedTrace sessionKey={sessionKey} />
+          </>
+        )}
       </div>
 
       {/* Footer */}
-      <footer className="border-t mt-12">
-        <div className="container mx-auto px-4 py-4 text-center text-sm text-muted-foreground">
-          Data provided by{' '}
-          <a
-            href="https://openf1.org"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline hover:text-foreground"
-          >
-            OpenF1 API
-          </a>
+      <footer className="border-t mt-12 bg-card">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <span>Data provided by</span>
+              <a
+                href="https://openf1.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-foreground hover:text-primary transition-colors"
+              >
+                OpenF1 API
+              </a>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-xs">
+                Not affiliated with Formula 1 or FIA
+              </span>
+            </div>
+          </div>
         </div>
       </footer>
     </main>

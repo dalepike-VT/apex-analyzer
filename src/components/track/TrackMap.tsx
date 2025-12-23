@@ -119,12 +119,22 @@ export function TrackMap({ sessionKey, onCornerSelect }: TrackMapProps) {
   useEffect(() => {
     if (!svgRef.current || trackPoints.length === 0) return;
 
+    console.log('[TrackMap] Drawing track with', trackPoints.length, 'points');
+    console.log('[TrackMap] First few points:', trackPoints.slice(0, 5));
+
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();
 
     const margin = { top: 20, right: 20, bottom: 20, left: 20 };
     const width = svgRef.current.clientWidth - margin.left - margin.right;
     const height = 350 - margin.top - margin.bottom;
+
+    console.log('[TrackMap] SVG dimensions:', { width, height, clientWidth: svgRef.current.clientWidth });
+
+    if (width <= 0 || height <= 0) {
+      console.warn('[TrackMap] Invalid dimensions, skipping render');
+      return;
+    }
 
     const g = svg
       .append('g')
@@ -134,16 +144,27 @@ export function TrackMap({ sessionKey, onCornerSelect }: TrackMapProps) {
     const xExtent = d3.extent(trackPoints, (d) => d.x) as [number, number];
     const yExtent = d3.extent(trackPoints, (d) => d.y) as [number, number];
 
+    console.log('[TrackMap] Extents:', { xExtent, yExtent });
+
     // Create scales with aspect ratio preservation
     const xRange = xExtent[1] - xExtent[0];
     const yRange = yExtent[1] - yExtent[0];
     const scale = Math.min(width / xRange, height / yRange) * 0.9;
+
+    console.log('[TrackMap] Scale calc:', { xRange, yRange, scale });
 
     const xCenter = (xExtent[0] + xExtent[1]) / 2;
     const yCenter = (yExtent[0] + yExtent[1]) / 2;
 
     const xScale = (x: number) => (x - xCenter) * scale + width / 2;
     const yScale = (y: number) => -(y - yCenter) * scale + height / 2; // Flip Y
+
+    // Test the scales with first point
+    if (trackPoints.length > 0) {
+      const testX = xScale(trackPoints[0].x);
+      const testY = yScale(trackPoints[0].y);
+      console.log('[TrackMap] First point scaled:', { testX, testY });
+    }
 
     // Draw track outline
     const line = d3
@@ -152,12 +173,15 @@ export function TrackMap({ sessionKey, onCornerSelect }: TrackMapProps) {
       .y((d) => yScale(d.y))
       .curve(d3.curveCatmullRom.alpha(0.5));
 
+    const pathData = line(trackPoints);
+    console.log('[TrackMap] Path data length:', pathData?.length, 'first 200 chars:', pathData?.slice(0, 200));
+
     // Track background (wider, darker)
     g.append('path')
       .datum(trackPoints)
       .attr('d', line)
       .attr('fill', 'none')
-      .attr('stroke', 'hsl(var(--muted))')
+      .attr('stroke', '#374151')
       .attr('stroke-width', 12)
       .attr('stroke-linecap', 'round')
       .attr('stroke-linejoin', 'round');
@@ -167,21 +191,33 @@ export function TrackMap({ sessionKey, onCornerSelect }: TrackMapProps) {
       .datum(trackPoints)
       .attr('d', line)
       .attr('fill', 'none')
-      .attr('stroke', 'hsl(var(--muted-foreground))')
+      .attr('stroke', '#6b7280')
       .attr('stroke-width', 8)
       .attr('stroke-linecap', 'round')
       .attr('stroke-linejoin', 'round')
-      .attr('opacity', 0.3);
+      .attr('opacity', 0.5);
 
-    // Racing line
+    // Racing line (team color or red default)
     g.append('path')
       .datum(trackPoints)
       .attr('d', line)
       .attr('fill', 'none')
-      .attr('stroke', 'hsl(var(--primary))')
+      .attr('stroke', '#ef4444')
       .attr('stroke-width', 2)
       .attr('stroke-linecap', 'round')
       .attr('stroke-linejoin', 'round');
+
+    // Debug: draw small dots at each point to verify data
+    trackPoints.forEach((point, i) => {
+      if (i % 10 === 0) { // Every 10th point
+        g.append('circle')
+          .attr('cx', xScale(point.x))
+          .attr('cy', yScale(point.y))
+          .attr('r', 2)
+          .attr('fill', '#3b82f6')
+          .attr('opacity', 0.5);
+      }
+    });
 
     // Start/finish marker (first point)
     if (trackPoints.length > 0) {
