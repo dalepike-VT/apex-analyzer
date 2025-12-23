@@ -337,8 +337,8 @@ export function CornerAnalysis({ sessionKey, selectedCorner, cornerLocation }: C
         {/* Driver Selection */}
         <div>
           <p className="text-xs text-muted-foreground mb-1">Compare drivers (max 4):</p>
-          <div className="flex flex-wrap gap-1">
-            {drivers?.slice(0, 8).map((driver) => (
+          <div className="flex flex-wrap gap-1 max-h-[60px] overflow-y-auto">
+            {drivers?.map((driver) => (
               <Button
                 key={driver.driver_number}
                 variant={selectedDrivers.includes(driver.driver_number) ? 'default' : 'outline'}

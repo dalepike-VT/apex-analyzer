@@ -324,8 +324,8 @@ export function TrackMap({ sessionKey, onCornerSelect }: TrackMapProps) {
       </CardHeader>
       <CardContent>
         {/* Driver Selection */}
-        <div className="flex flex-wrap gap-1 mb-3 max-h-[60px] overflow-y-auto">
-          {drivers?.slice(0, 10).map((driver) => (
+        <div className="flex flex-wrap gap-1 mb-3 max-h-[80px] overflow-y-auto">
+          {drivers?.map((driver) => (
             <Button
               key={driver.driver_number}
               variant={selectedDriver === driver.driver_number ? 'default' : 'outline'}
