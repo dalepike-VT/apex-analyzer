@@ -23,19 +23,27 @@ const BASE_URL = process.env.NEXT_PUBLIC_OPENF1_BASE_URL || 'https://api.openf1.
 
 /**
  * Build URL with query parameters
+ * Handles special operators like date>=, date<= by encoding them properly
  */
 function buildUrl(endpoint: string, params?: QueryParams): string {
-  const url = new URL(`${BASE_URL}${endpoint}`);
+  const baseUrl = `${BASE_URL}${endpoint}`;
 
-  if (params) {
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined) {
-        url.searchParams.append(key, String(value));
-      }
-    });
+  if (!params || Object.keys(params).length === 0) {
+    return baseUrl;
   }
 
-  return url.toString();
+  const queryParts: string[] = [];
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined) {
+      // For keys with operators (like date>=), we need to encode the key properly
+      const encodedKey = encodeURIComponent(key);
+      const encodedValue = encodeURIComponent(String(value));
+      queryParts.push(`${encodedKey}=${encodedValue}`);
+    }
+  });
+
+  return queryParts.length > 0 ? `${baseUrl}?${queryParts.join('&')}` : baseUrl;
 }
 
 /**

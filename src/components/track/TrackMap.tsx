@@ -58,23 +58,32 @@ export function TrackMap({ sessionKey, onCornerSelect }: TrackMapProps) {
       try {
         const lapStart = new Date(fastestLap.date_start);
         const lapDuration = fastestLap.lap_duration || 90;
-        const lapEnd = new Date(lapStart.getTime() + (lapDuration + 2) * 1000);
+        const lapEnd = new Date(lapStart.getTime() + (lapDuration + 5) * 1000);
+
+        // Format dates without timezone for API compatibility
+        const startStr = lapStart.toISOString().slice(0, 19);
+        const endStr = lapEnd.toISOString().slice(0, 19);
 
         // Fetch location data with time bounds
         const locationData = await openf1.getLocation(sessionKey, selectedDriver, {
-          'date>=': lapStart.toISOString(),
-          'date<=': lapEnd.toISOString(),
+          'date>=': startStr,
+          'date<=': endStr,
         });
 
-        if (locationData.length === 0) {
+        // Filter out points with zero coordinates (invalid data)
+        const validData = locationData.filter(
+          (loc) => loc.x !== 0 || loc.y !== 0
+        );
+
+        if (validData.length === 0) {
           setError('No track data available for this lap');
           setTrackPoints([]);
           return;
         }
 
         // Sample points to reduce density (aim for ~300-500 points)
-        const sampleRate = Math.max(1, Math.floor(locationData.length / 400));
-        const sampled = locationData.filter((_, i) => i % sampleRate === 0);
+        const sampleRate = Math.max(1, Math.floor(validData.length / 400));
+        const sampled = validData.filter((_, i) => i % sampleRate === 0);
 
         setTrackPoints(
           sampled.map((loc) => ({
