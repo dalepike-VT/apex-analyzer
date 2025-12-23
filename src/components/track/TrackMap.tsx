@@ -2,10 +2,11 @@
 
 import { useMemo, useRef, useEffect, useState } from 'react';
 import * as d3 from 'd3';
-import { useLocation, useDrivers, useLaps } from '@/hooks/useOpenF1';
+import { useDrivers, useLaps } from '@/hooks/useOpenF1';
+import { openf1 } from '@/lib/openf1';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import type { Location, Driver } from '@/lib/openf1';
+import type { Location, Driver, Lap } from '@/lib/openf1';
 
 interface TrackMapProps {
   sessionKey: number | null;
@@ -15,23 +16,17 @@ interface TrackMapProps {
 interface TrackPoint {
   x: number;
   y: number;
-  speed?: number;
 }
 
 export function TrackMap({ sessionKey, onCornerSelect }: TrackMapProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [selectedDriver, setSelectedDriver] = useState<number | null>(null);
+  const [trackPoints, setTrackPoints] = useState<TrackPoint[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const { data: drivers } = useDrivers(sessionKey);
-  const { data: laps } = useLaps(sessionKey, selectedDriver ?? undefined);
-
-  // Get location data for selected driver's fastest lap
-  const { data: locationData, isLoading: locationLoading } = useLocation(
-    sessionKey,
-    selectedDriver,
-    selectedDriver !== null
-  );
+  const { data: laps } = useLaps(sessionKey);
 
   // Find the fastest lap for selected driver
   const fastestLap = useMemo(() => {
@@ -42,27 +37,62 @@ export function TrackMap({ sessionKey, onCornerSelect }: TrackMapProps) {
         lap.lap_duration !== null &&
         !lap.is_pit_out_lap
     );
-    return driverLaps.reduce<typeof driverLaps[0] | null>((best, lap) => {
+    return driverLaps.reduce<Lap | null>((best, lap) => {
       if (!best) return lap;
       if (lap.lap_duration! < best.lap_duration!) return lap;
       return best;
     }, null);
   }, [laps, selectedDriver]);
 
-  // Process location data to get track outline
-  const trackPoints = useMemo(() => {
-    if (!locationData || locationData.length === 0) return [];
+  // Fetch location data for just the fastest lap
+  useEffect(() => {
+    if (!sessionKey || !selectedDriver || !fastestLap) {
+      setTrackPoints([]);
+      return;
+    }
 
-    // Get a sample of points to draw the track
-    // Take every Nth point to reduce density
-    const sampleRate = Math.max(1, Math.floor(locationData.length / 500));
-    const sampled = locationData.filter((_, i) => i % sampleRate === 0);
+    const fetchLocationData = async () => {
+      setIsLoading(true);
+      setError(null);
 
-    return sampled.map((loc) => ({
-      x: loc.x,
-      y: loc.y,
-    }));
-  }, [locationData]);
+      try {
+        const lapStart = new Date(fastestLap.date_start);
+        const lapDuration = fastestLap.lap_duration || 90;
+        const lapEnd = new Date(lapStart.getTime() + (lapDuration + 2) * 1000);
+
+        // Fetch location data with time bounds
+        const locationData = await openf1.getLocation(sessionKey, selectedDriver, {
+          'date>=': lapStart.toISOString(),
+          'date<=': lapEnd.toISOString(),
+        });
+
+        if (locationData.length === 0) {
+          setError('No track data available for this lap');
+          setTrackPoints([]);
+          return;
+        }
+
+        // Sample points to reduce density (aim for ~300-500 points)
+        const sampleRate = Math.max(1, Math.floor(locationData.length / 400));
+        const sampled = locationData.filter((_, i) => i % sampleRate === 0);
+
+        setTrackPoints(
+          sampled.map((loc) => ({
+            x: loc.x,
+            y: loc.y,
+          }))
+        );
+      } catch (err) {
+        console.error('Error fetching location data:', err);
+        setError('Failed to load track data');
+        setTrackPoints([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchLocationData();
+  }, [sessionKey, selectedDriver, fastestLap]);
 
   // Draw the track
   useEffect(() => {
@@ -148,13 +178,11 @@ export function TrackMap({ sessionKey, onCornerSelect }: TrackMapProps) {
         .text('S/F');
     }
 
-    // Add corner markers at speed minima (simplified corner detection)
-    // Find local minima in the track (sharp turns)
+    // Add corner markers at direction changes
     const cornerIndices: number[] = [];
-    const windowSize = Math.floor(trackPoints.length / 20);
+    const windowSize = Math.max(5, Math.floor(trackPoints.length / 20));
 
     for (let i = windowSize; i < trackPoints.length - windowSize; i += windowSize) {
-      // Calculate direction change
       const prev = trackPoints[i - windowSize];
       const curr = trackPoints[i];
       const next = trackPoints[i + windowSize];
@@ -165,7 +193,6 @@ export function TrackMap({ sessionKey, onCornerSelect }: TrackMapProps) {
       if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
 
       if (angleDiff > 0.3) {
-        // Threshold for significant turn
         cornerIndices.push(i);
       }
     }
@@ -260,18 +287,23 @@ export function TrackMap({ sessionKey, onCornerSelect }: TrackMapProps) {
         </div>
 
         {/* Track Visualization */}
-        {locationLoading ? (
+        {isLoading ? (
           <div className="h-[300px] flex items-center justify-center">
-            <p className="text-muted-foreground">Loading track data...</p>
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+              <p className="text-muted-foreground text-sm">Loading track data...</p>
+            </div>
+          </div>
+        ) : error ? (
+          <div className="h-[300px] flex items-center justify-center">
+            <p className="text-muted-foreground text-sm">{error}</p>
           </div>
         ) : trackPoints.length > 0 ? (
           <svg ref={svgRef} width="100%" height={350} />
         ) : (
           <div className="h-[300px] flex items-center justify-center">
             <p className="text-muted-foreground text-sm text-center">
-              {selectedDriver
-                ? 'Loading track outline...'
-                : 'Select a driver above to view their racing line'}
+              Select a driver above to view their racing line
             </p>
           </div>
         )}
