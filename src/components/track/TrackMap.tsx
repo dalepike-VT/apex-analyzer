@@ -64,16 +64,28 @@ export function TrackMap({ sessionKey, onCornerSelect }: TrackMapProps) {
         const startStr = lapStart.toISOString().slice(0, 19);
         const endStr = lapEnd.toISOString().slice(0, 19);
 
+        console.log('[TrackMap] Fetching location for:', {
+          sessionKey,
+          driver: selectedDriver,
+          lap: fastestLap.lap_number,
+          startStr,
+          endStr
+        });
+
         // Fetch location data with time bounds
         const locationData = await openf1.getLocation(sessionKey, selectedDriver, {
           'date>=': startStr,
           'date<=': endStr,
         });
 
+        console.log('[TrackMap] Got location data:', locationData.length, 'points');
+
         // Filter out points with zero coordinates (invalid data)
         const validData = locationData.filter(
           (loc) => loc.x !== 0 || loc.y !== 0
         );
+
+        console.log('[TrackMap] Valid (non-zero) points:', validData.length);
 
         if (validData.length === 0) {
           setError('No track data available for this lap');

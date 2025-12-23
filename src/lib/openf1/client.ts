@@ -23,7 +23,8 @@ const BASE_URL = process.env.NEXT_PUBLIC_OPENF1_BASE_URL || 'https://api.openf1.
 
 /**
  * Build URL with query parameters
- * Handles special operators like date>=, date<= by encoding them properly
+ * Handles OpenF1's special operator syntax where operators like >=, <= are
+ * appended to the key name WITHOUT a separate = sign (e.g., "date>=2024-01-01")
  */
 function buildUrl(endpoint: string, params?: QueryParams): string {
   const baseUrl = `${BASE_URL}${endpoint}`;
@@ -33,13 +34,26 @@ function buildUrl(endpoint: string, params?: QueryParams): string {
   }
 
   const queryParts: string[] = [];
+  // Operators that OpenF1 uses as key suffixes (no = between key and value)
+  const operatorSuffixes = ['>=', '<=', '>', '<'];
 
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined) {
-      // For keys with operators (like date>=), we need to encode the key properly
-      const encodedKey = encodeURIComponent(key);
-      const encodedValue = encodeURIComponent(String(value));
-      queryParts.push(`${encodedKey}=${encodedValue}`);
+      // Check if key ends with an operator suffix
+      const hasOperator = operatorSuffixes.some(op => key.endsWith(op));
+
+      if (hasOperator) {
+        // OpenF1 operator syntax: encode key (which includes operator), then value directly
+        // Result: date%3E%3D2024-01-01 (no = between key and value)
+        const encodedKey = encodeURIComponent(key);
+        const encodedValue = encodeURIComponent(String(value));
+        queryParts.push(`${encodedKey}${encodedValue}`);
+      } else {
+        // Standard key=value format
+        const encodedKey = encodeURIComponent(key);
+        const encodedValue = encodeURIComponent(String(value));
+        queryParts.push(`${encodedKey}=${encodedValue}`);
+      }
     }
   });
 
@@ -51,6 +65,9 @@ function buildUrl(endpoint: string, params?: QueryParams): string {
  */
 async function fetchApi<T>(endpoint: string, params?: QueryParams): Promise<T> {
   const url = buildUrl(endpoint, params);
+
+  // Debug logging
+  console.log('[OpenF1 API] Fetching:', url);
 
   const response = await fetch(url, {
     headers: {

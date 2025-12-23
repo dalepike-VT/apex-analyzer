@@ -87,17 +87,19 @@ export function SpeedTrace({ sessionKey }: SpeedTraceProps) {
           // We need to estimate time range based on lap start
           const lapStart = new Date(fastestLap.date_start);
           const lapDuration = fastestLap.lap_duration || 90; // Default 90s
-          const lapEnd = new Date(lapStart.getTime() + lapDuration * 1000 + 2000);
+          const lapEnd = new Date(lapStart.getTime() + (lapDuration + 2) * 1000);
+
+          // Format dates without timezone for API compatibility
+          const startStr = lapStart.toISOString().slice(0, 19);
+          const endStr = lapEnd.toISOString().slice(0, 19);
 
           const carData = await openf1.getCarData(sessionKey, driverNumber, {
-            date: `>=${lapStart.toISOString()}`,
+            'date>=': startStr,
+            'date<=': endStr,
           });
 
-          // Filter to just the lap duration
-          const lapData = carData.filter((d) => {
-            const date = new Date(d.date);
-            return date >= lapStart && date <= lapEnd;
-          });
+          // Data is already filtered by API, just use it directly
+          const lapData = carData;
 
           // Sample to reduce data points (take every Nth point)
           const sampleRate = Math.max(1, Math.floor(lapData.length / 200));
