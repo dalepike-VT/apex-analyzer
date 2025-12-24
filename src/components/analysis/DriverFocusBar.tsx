@@ -140,7 +140,7 @@ export function DriverFocusBar({
           </div>
 
           {/* Driver grid */}
-          <div className="flex flex-wrap gap-1.5">
+          <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-20 gap-1.5">
             {sortedDrivers.map((driver, index) => {
               const isSelected = focusedDrivers.includes(driver.driver_number);
               const isFastestLap = fastestLapHolder?.driver.driver_number === driver.driver_number;
@@ -150,7 +150,7 @@ export function DriverFocusBar({
                   key={driver.driver_number}
                   variant={isSelected ? 'default' : 'outline'}
                   size="sm"
-                  className="h-7 px-2 text-xs gap-1.5 relative"
+                  className="h-auto py-1.5 px-2 text-xs flex-col gap-0 relative min-w-0"
                   onClick={() => toggleDriver(driver.driver_number)}
                   style={
                     isSelected
@@ -158,8 +158,8 @@ export function DriverFocusBar({
                       : { borderColor: `#${driver.team_colour}60` }
                   }
                 >
-                  <span className="text-[10px] opacity-70">P{index + 1}</span>
-                  <span className="font-semibold">{driver.name_acronym}</span>
+                  <span className="text-[9px] opacity-60">P{index + 1}</span>
+                  <span className="font-bold text-[11px]">{driver.name_acronym}</span>
                   {isFastestLap && (
                     <Zap className="h-3 w-3 text-purple-400 absolute -top-1 -right-1" />
                   )}
