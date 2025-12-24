@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { YearSelect, MeetingSelect, SessionSelect } from '@/components/selectors';
 import { SessionInfo, LapTimesTable, SectorChart, SpeedTrace, CornerAnalysis, PitStopAnalysis, RacePositionChart, TireStrategy } from '@/components/analysis';
-import { TrackMap } from '@/components/track';
+import { CornerZoom } from '@/components/track';
 import { WelcomeGuide } from '@/components/WelcomeGuide';
 import type { Meeting, Session } from '@/lib/openf1';
 
@@ -128,18 +128,18 @@ export default function Home() {
             {/* Session Info Banner */}
             <SessionInfo meeting={selectedMeeting} session={selectedSession} />
 
-            {/* Content Grid */}
+            {/* Corner Racing Line Comparison */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Track Map */}
+              {/* Zoomed Corner View */}
               <div className="lg:col-span-2">
-                <TrackMap
+                <CornerZoom
                   sessionKey={sessionKey}
-                  onCornerSelect={handleCornerSelect}
+                  onCornerChange={handleCornerSelect}
                 />
               </div>
 
-              {/* Corner Analysis */}
-              <div className="h-[450px]">
+              {/* Corner Speed Analysis */}
+              <div className="h-[520px]">
                 <CornerAnalysis
                   sessionKey={sessionKey}
                   selectedCorner={selectedCorner}
