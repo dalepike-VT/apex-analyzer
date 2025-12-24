@@ -13,7 +13,7 @@ export default function Home() {
   const [sessionKey, setSessionKey] = useState<number | null>(null);
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
-  const [selectedCorner, setSelectedCorner] = useState<number | null>(null);
+  const [selectedCorner, setSelectedCorner] = useState<number>(1);
 
   const handleYearChange = (newYear: number) => {
     setYear(newYear);
@@ -21,7 +21,7 @@ export default function Home() {
     setSessionKey(null);
     setSelectedMeeting(null);
     setSelectedSession(null);
-    setSelectedCorner(null);
+    setSelectedCorner(1);
   };
 
   const handleMeetingChange = (newMeetingKey: number, meeting: Meeting) => {
@@ -29,13 +29,13 @@ export default function Home() {
     setSessionKey(null);
     setSelectedMeeting(meeting);
     setSelectedSession(null);
-    setSelectedCorner(null);
+    setSelectedCorner(1);
   };
 
   const handleSessionChange = (newSessionKey: number, session: Session) => {
     setSessionKey(newSessionKey);
     setSelectedSession(session);
-    setSelectedCorner(null);
+    setSelectedCorner(1);
   };
 
   const handleCornerSelect = (corner: number) => {

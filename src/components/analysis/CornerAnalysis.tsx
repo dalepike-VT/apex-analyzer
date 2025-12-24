@@ -10,7 +10,7 @@ import type { CarData, Driver, Lap, Location } from '@/lib/openf1';
 
 interface CornerAnalysisProps {
   sessionKey: number | null;
-  selectedCorner: number | null;
+  selectedCorner: number;
   cornerLocation?: { x: number; y: number } | null;
 }
 
@@ -73,7 +73,7 @@ export function CornerAnalysis({ sessionKey, selectedCorner, cornerLocation }: C
 
   // Fetch and analyze corner data when drivers are selected
   useEffect(() => {
-    if (!sessionKey || selectedDrivers.length === 0 || !drivers || selectedCorner === null) {
+    if (!sessionKey || selectedDrivers.length === 0 || !drivers) {
       setCornerData([]);
       return;
     }
@@ -307,21 +307,6 @@ export function CornerAnalysis({ sessionKey, selectedCorner, cornerLocation }: C
         <CardContent>
           <p className="text-muted-foreground text-sm">
             Select a session to analyze corners
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (selectedCorner === null) {
-    return (
-      <Card className="h-full">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Corner Analysis</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm">
-            Select a driver on the track map, then click a corner marker to view detailed analysis
           </p>
         </CardContent>
       </Card>
