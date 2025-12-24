@@ -1,5 +1,6 @@
 export { DriverList } from './DriverList';
 export { SessionInfo } from './SessionInfo';
+export { DriverFocusBar } from './DriverFocusBar';
 export { LapTimesTable } from './LapTimesTable';
 export { SectorChart } from './SectorChart';
 export { SpeedTrace } from './SpeedTrace';

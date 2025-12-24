@@ -12,6 +12,7 @@ import type { Driver, Lap } from '@/lib/openf1';
 interface CornerZoomProps {
   sessionKey: number | null;
   onCornerChange?: (corner: number) => void;
+  focusedDrivers?: number[];
 }
 
 interface TrackPoint {
@@ -31,10 +32,9 @@ interface CornerData {
   points: TrackPoint[];
 }
 
-export function CornerZoom({ sessionKey, onCornerChange }: CornerZoomProps) {
+export function CornerZoom({ sessionKey, onCornerChange, focusedDrivers = [] }: CornerZoomProps) {
   const mainSvgRef = useRef<SVGSVGElement>(null);
   const miniSvgRef = useRef<SVGSVGElement>(null);
-  const [selectedDrivers, setSelectedDrivers] = useState<number[]>([]);
   const [driverTraces, setDriverTraces] = useState<DriverTraceData[]>([]);
   const [fullTrackPoints, setFullTrackPoints] = useState<TrackPoint[]>([]);
   const [corners, setCorners] = useState<CornerData[]>([]);
@@ -164,22 +164,9 @@ export function CornerZoom({ sessionKey, onCornerChange }: CornerZoomProps) {
     fetchTrackData();
   }, [sessionKey, fastestDriver]);
 
-  // Toggle driver selection
-  const toggleDriver = (driverNumber: number) => {
-    setSelectedDrivers((prev) => {
-      if (prev.includes(driverNumber)) {
-        return prev.filter((d) => d !== driverNumber);
-      }
-      if (prev.length >= 4) {
-        return [...prev.slice(1), driverNumber];
-      }
-      return [...prev, driverNumber];
-    });
-  };
-
-  // Fetch traces for selected drivers
+  // Fetch traces for focused drivers
   useEffect(() => {
-    if (!sessionKey || selectedDrivers.length === 0 || !drivers || corners.length === 0) {
+    if (!sessionKey || focusedDrivers.length === 0 || !drivers || corners.length === 0) {
       setDriverTraces([]);
       return;
     }
@@ -191,7 +178,7 @@ export function CornerZoom({ sessionKey, onCornerChange }: CornerZoomProps) {
         const currentCorner = corners[selectedCorner - 1];
         if (!currentCorner) return;
 
-        for (const driverNumber of selectedDrivers) {
+        for (const driverNumber of focusedDrivers) {
           const driver = drivers.find((d) => d.driver_number === driverNumber);
           const fastestLap = driverFastestLaps.get(driverNumber);
 
@@ -235,7 +222,7 @@ export function CornerZoom({ sessionKey, onCornerChange }: CornerZoomProps) {
     };
 
     fetchDriverTraces();
-  }, [sessionKey, selectedDrivers, drivers, driverFastestLaps, selectedCorner, corners, fullTrackPoints.length]);
+  }, [sessionKey, focusedDrivers, drivers, driverFastestLaps, selectedCorner, corners, fullTrackPoints.length]);
 
   // Draw mini track overview
   useEffect(() => {
@@ -415,7 +402,7 @@ export function CornerZoom({ sessionKey, onCornerChange }: CornerZoomProps) {
         .attr('text-anchor', 'middle')
         .attr('font-size', '14px')
         .attr('fill', '#9ca3af')
-        .text('Select drivers to compare racing lines');
+        .text('Select drivers above to compare racing lines');
     }
 
     // Corner label
@@ -490,30 +477,7 @@ export function CornerZoom({ sessionKey, onCornerChange }: CornerZoomProps) {
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-2">
-        {/* Driver Selection */}
-        <div>
-          <p className="text-xs text-muted-foreground mb-1">Compare racing lines (max 4 drivers):</p>
-          <div className="flex flex-wrap gap-1 max-h-[50px] overflow-y-auto">
-            {drivers?.map((driver) => (
-              <Button
-                key={driver.driver_number}
-                variant={selectedDrivers.includes(driver.driver_number) ? 'default' : 'outline'}
-                size="sm"
-                className="h-6 px-2 text-[10px]"
-                onClick={() => toggleDriver(driver.driver_number)}
-                style={
-                  selectedDrivers.includes(driver.driver_number)
-                    ? { backgroundColor: `#${driver.team_colour}` }
-                    : { borderColor: `#${driver.team_colour}40` }
-                }
-              >
-                {driver.name_acronym}
-              </Button>
-            ))}
-          </div>
-        </div>
-
+      <CardContent>
         {/* Zoomed Corner View */}
         {isLoading ? (
           <div className="h-[200px] flex items-center justify-center">

@@ -11,6 +11,7 @@ import type { CarData, Driver, Lap, Location } from '@/lib/openf1';
 interface CornerAnalysisProps {
   sessionKey: number | null;
   selectedCorner: number;
+  focusedDrivers?: number[];
   cornerLocation?: { x: number; y: number } | null;
 }
 
@@ -25,9 +26,8 @@ interface DriverCornerData {
   speedTrace: { distance: number; speed: number }[];
 }
 
-export function CornerAnalysis({ sessionKey, selectedCorner, cornerLocation }: CornerAnalysisProps) {
+export function CornerAnalysis({ sessionKey, selectedCorner, focusedDrivers = [], cornerLocation }: CornerAnalysisProps) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const [selectedDrivers, setSelectedDrivers] = useState<number[]>([]);
   const [cornerData, setCornerData] = useState<DriverCornerData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -58,22 +58,9 @@ export function CornerAnalysis({ sessionKey, selectedCorner, cornerLocation }: C
     return fastestLaps;
   }, [laps, drivers]);
 
-  // Toggle driver selection
-  const toggleDriver = (driverNumber: number) => {
-    setSelectedDrivers((prev) => {
-      if (prev.includes(driverNumber)) {
-        return prev.filter((d) => d !== driverNumber);
-      }
-      if (prev.length >= 4) {
-        return [...prev.slice(1), driverNumber];
-      }
-      return [...prev, driverNumber];
-    });
-  };
-
-  // Fetch and analyze corner data when drivers are selected
+  // Fetch and analyze corner data when focused drivers change
   useEffect(() => {
-    if (!sessionKey || selectedDrivers.length === 0 || !drivers) {
+    if (!sessionKey || focusedDrivers.length === 0 || !drivers) {
       setCornerData([]);
       return;
     }
@@ -83,7 +70,7 @@ export function CornerAnalysis({ sessionKey, selectedCorner, cornerLocation }: C
       try {
         const results: DriverCornerData[] = [];
 
-        for (const driverNumber of selectedDrivers) {
+        for (const driverNumber of focusedDrivers) {
           const driver = drivers.find((d) => d.driver_number === driverNumber);
           const fastestLap = driverFastestLaps.get(driverNumber);
 
@@ -185,7 +172,7 @@ export function CornerAnalysis({ sessionKey, selectedCorner, cornerLocation }: C
     };
 
     analyzeCorner();
-  }, [sessionKey, selectedDrivers, drivers, driverFastestLaps, selectedCorner]);
+  }, [sessionKey, focusedDrivers, drivers, driverFastestLaps, selectedCorner]);
 
   // Draw corner speed comparison chart
   useEffect(() => {
@@ -319,29 +306,6 @@ export function CornerAnalysis({ sessionKey, selectedCorner, cornerLocation }: C
         <CardTitle className="text-base">Turn {selectedCorner} Analysis</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* Driver Selection */}
-        <div>
-          <p className="text-xs text-muted-foreground mb-1">Compare drivers (max 4):</p>
-          <div className="flex flex-wrap gap-1 max-h-[60px] overflow-y-auto">
-            {drivers?.map((driver) => (
-              <Button
-                key={driver.driver_number}
-                variant={selectedDrivers.includes(driver.driver_number) ? 'default' : 'outline'}
-                size="sm"
-                className="h-5 px-1.5 text-[10px]"
-                onClick={() => toggleDriver(driver.driver_number)}
-                style={
-                  selectedDrivers.includes(driver.driver_number)
-                    ? { backgroundColor: `#${driver.team_colour}` }
-                    : { borderColor: `#${driver.team_colour}40` }
-                }
-              >
-                {driver.name_acronym}
-              </Button>
-            ))}
-          </div>
-        </div>
-
         {isLoading ? (
           <div className="h-[150px] flex items-center justify-center">
             <p className="text-muted-foreground text-xs">Analyzing corner...</p>
@@ -374,7 +338,7 @@ export function CornerAnalysis({ sessionKey, selectedCorner, cornerLocation }: C
               ))}
             </div>
           </>
-        ) : selectedDrivers.length === 0 ? (
+        ) : focusedDrivers.length === 0 ? (
           <p className="text-muted-foreground text-xs text-center py-4">
             Select drivers above to compare corner performance
           </p>

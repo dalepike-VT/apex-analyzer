@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { YearSelect, MeetingSelect, SessionSelect } from '@/components/selectors';
-import { SessionInfo, LapTimesTable, SectorChart, SpeedTrace, CornerAnalysis, PitStopAnalysis, RacePositionChart, TireStrategy } from '@/components/analysis';
+import { SessionInfo, DriverFocusBar, LapTimesTable, SectorChart, SpeedTrace, CornerAnalysis, PitStopAnalysis, RacePositionChart, TireStrategy } from '@/components/analysis';
 import { CornerZoom } from '@/components/track';
 import { WelcomeGuide } from '@/components/WelcomeGuide';
 import type { Meeting, Session } from '@/lib/openf1';
@@ -14,6 +14,7 @@ export default function Home() {
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [selectedCorner, setSelectedCorner] = useState<number>(1);
+  const [focusedDrivers, setFocusedDrivers] = useState<number[]>([]);
 
   const handleYearChange = (newYear: number) => {
     setYear(newYear);
@@ -22,6 +23,7 @@ export default function Home() {
     setSelectedMeeting(null);
     setSelectedSession(null);
     setSelectedCorner(1);
+    setFocusedDrivers([]);
   };
 
   const handleMeetingChange = (newMeetingKey: number, meeting: Meeting) => {
@@ -30,12 +32,14 @@ export default function Home() {
     setSelectedMeeting(meeting);
     setSelectedSession(null);
     setSelectedCorner(1);
+    setFocusedDrivers([]);
   };
 
   const handleSessionChange = (newSessionKey: number, session: Session) => {
     setSessionKey(newSessionKey);
     setSelectedSession(session);
     setSelectedCorner(1);
+    setFocusedDrivers([]);
   };
 
   const handleCornerSelect = (corner: number) => {
@@ -128,6 +132,14 @@ export default function Home() {
             {/* Session Info Banner */}
             <SessionInfo meeting={selectedMeeting} session={selectedSession} />
 
+            {/* Global Driver Focus Bar */}
+            <DriverFocusBar
+              sessionKey={sessionKey}
+              focusedDrivers={focusedDrivers}
+              onFocusedDriversChange={setFocusedDrivers}
+              maxDrivers={4}
+            />
+
             {/* Corner Racing Line Comparison */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Zoomed Corner View */}
@@ -135,6 +147,7 @@ export default function Home() {
                 <CornerZoom
                   sessionKey={sessionKey}
                   onCornerChange={handleCornerSelect}
+                  focusedDrivers={focusedDrivers}
                 />
               </div>
 
@@ -143,14 +156,15 @@ export default function Home() {
                 <CornerAnalysis
                   sessionKey={sessionKey}
                   selectedCorner={selectedCorner}
+                  focusedDrivers={focusedDrivers}
                 />
               </div>
             </div>
 
             {/* Race Position & Tire Strategy */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <RacePositionChart sessionKey={sessionKey} />
-              <TireStrategy sessionKey={sessionKey} />
+              <RacePositionChart sessionKey={sessionKey} focusedDrivers={focusedDrivers} />
+              <TireStrategy sessionKey={sessionKey} focusedDrivers={focusedDrivers} />
             </div>
 
             {/* Pit Stop Analysis */}

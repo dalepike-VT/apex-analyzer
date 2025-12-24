@@ -1,14 +1,14 @@
 'use client';
 
-import { useMemo, useRef, useEffect, useState } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import * as d3 from 'd3';
 import { useDrivers, useLaps } from '@/hooks/useOpenF1';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { TrendingUp } from 'lucide-react';
 
 interface RacePositionChartProps {
   sessionKey: number | null;
+  focusedDrivers?: number[];
 }
 
 interface PositionData {
@@ -23,9 +23,8 @@ interface DriverPositions {
   positions: PositionData[];
 }
 
-export function RacePositionChart({ sessionKey }: RacePositionChartProps) {
+export function RacePositionChart({ sessionKey, focusedDrivers = [] }: RacePositionChartProps) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const [selectedDrivers, setSelectedDrivers] = useState<number[]>([]);
 
   const { data: drivers } = useDrivers(sessionKey);
   const { data: laps, isLoading } = useLaps(sessionKey);
@@ -93,33 +92,9 @@ export function RacePositionChart({ sessionKey }: RacePositionChartProps) {
     return Array.from(positionMap.values()).filter((d) => d.positions.length > 0);
   }, [laps, drivers]);
 
-  // Auto-select top 5 drivers initially
-  useEffect(() => {
-    if (driverPositions.length > 0 && selectedDrivers.length === 0) {
-      const top5 = driverPositions
-        .filter((d) => d.positions.length > 0)
-        .slice(0, 5)
-        .map((d) => d.driverNumber);
-      setSelectedDrivers(top5);
-    }
-  }, [driverPositions, selectedDrivers.length]);
-
-  // Toggle driver selection
-  const toggleDriver = (driverNumber: number) => {
-    setSelectedDrivers((prev) => {
-      if (prev.includes(driverNumber)) {
-        return prev.filter((d) => d !== driverNumber);
-      }
-      if (prev.length >= 6) {
-        return [...prev.slice(1), driverNumber];
-      }
-      return [...prev, driverNumber];
-    });
-  };
-
   // Draw the chart
   useEffect(() => {
-    if (!svgRef.current || driverPositions.length === 0 || selectedDrivers.length === 0) return;
+    if (!svgRef.current || driverPositions.length === 0 || focusedDrivers.length === 0) return;
 
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();
@@ -134,9 +109,9 @@ export function RacePositionChart({ sessionKey }: RacePositionChartProps) {
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
-    // Filter to selected drivers
+    // Filter to focused drivers
     const filteredData = driverPositions.filter((d) =>
-      selectedDrivers.includes(d.driverNumber)
+      focusedDrivers.includes(d.driverNumber)
     );
 
     // Find extents
@@ -234,7 +209,7 @@ export function RacePositionChart({ sessionKey }: RacePositionChartProps) {
         .style('fill', 'currentColor')
         .text(`${driver.acronym} (P${lastPos?.position || '-'})`);
     });
-  }, [driverPositions, selectedDrivers]);
+  }, [driverPositions, focusedDrivers]);
 
   if (!sessionKey) {
     return (
@@ -281,31 +256,14 @@ export function RacePositionChart({ sessionKey }: RacePositionChartProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {/* Driver Selection */}
-        <div className="mb-3">
-          <p className="text-xs text-muted-foreground mb-1">Select drivers to track (max 6):</p>
-          <div className="flex flex-wrap gap-1 max-h-[50px] overflow-y-auto">
-            {drivers?.map((driver) => (
-              <Button
-                key={driver.driver_number}
-                variant={selectedDrivers.includes(driver.driver_number) ? 'default' : 'outline'}
-                size="sm"
-                className="h-6 px-2 text-[10px]"
-                onClick={() => toggleDriver(driver.driver_number)}
-                style={
-                  selectedDrivers.includes(driver.driver_number)
-                    ? { backgroundColor: `#${driver.team_colour}` }
-                    : { borderColor: `#${driver.team_colour}40` }
-                }
-              >
-                {driver.name_acronym}
-              </Button>
-            ))}
-          </div>
-        </div>
-
         {/* Chart */}
-        {driverPositions.length > 0 ? (
+        {focusedDrivers.length === 0 ? (
+          <div className="h-[300px] flex items-center justify-center">
+            <p className="text-muted-foreground text-sm">
+              Select drivers above to track positions
+            </p>
+          </div>
+        ) : driverPositions.length > 0 ? (
           <svg ref={svgRef} width="100%" height={300} />
         ) : (
           <div className="h-[300px] flex items-center justify-center">

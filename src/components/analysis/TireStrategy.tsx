@@ -7,6 +7,7 @@ import { Circle } from 'lucide-react';
 
 interface TireStrategyProps {
   sessionKey: number | null;
+  focusedDrivers?: number[];
 }
 
 const COMPOUND_COLORS: Record<string, string> = {
@@ -38,7 +39,7 @@ interface DriverStrategy {
   totalLaps: number;
 }
 
-export function TireStrategy({ sessionKey }: TireStrategyProps) {
+export function TireStrategy({ sessionKey, focusedDrivers = [] }: TireStrategyProps) {
   const { data: stints, isLoading: stintsLoading } = useStints(sessionKey);
   const { data: drivers } = useDrivers(sessionKey);
   const { data: laps } = useLaps(sessionKey);
@@ -157,8 +158,14 @@ export function TireStrategy({ sessionKey }: TireStrategyProps) {
 
         {/* Driver strategies */}
         <div className="space-y-1.5">
-          {driverStrategies.slice(0, 15).map((driver) => (
-            <div key={driver.driverNumber} className="flex items-center gap-2">
+          {driverStrategies.slice(0, 15).map((driver) => {
+            const isFocused = focusedDrivers.length === 0 || focusedDrivers.includes(driver.driverNumber);
+            return (
+            <div
+              key={driver.driverNumber}
+              className="flex items-center gap-2 transition-opacity"
+              style={{ opacity: isFocused ? 1 : 0.3 }}
+            >
               {/* Driver badge */}
               <div
                 className="w-12 text-center py-0.5 rounded text-[10px] font-bold text-white flex-shrink-0"
@@ -201,7 +208,8 @@ export function TireStrategy({ sessionKey }: TireStrategyProps) {
                 {driver.stints.length - 1}x
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Legend */}
