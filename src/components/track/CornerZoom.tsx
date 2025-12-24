@@ -292,9 +292,9 @@ export function CornerZoom({ sessionKey, onCornerChange }: CornerZoomProps) {
     const svg = d3.select(mainSvgRef.current);
     svg.selectAll('*').remove();
 
-    const margin = { top: 20, right: 20, bottom: 20, left: 20 };
+    const margin = { top: 15, right: 15, bottom: 15, left: 15 };
     const width = mainSvgRef.current.clientWidth - margin.left - margin.right;
-    const height = 380 - margin.top - margin.bottom;
+    const height = 280 - margin.top - margin.bottom;
 
     if (width <= 0 || height <= 0) return;
 
@@ -446,7 +446,7 @@ export function CornerZoom({ sessionKey, onCornerChange }: CornerZoomProps) {
 
   if (!sessionKey) {
     return (
-      <Card className="h-[520px]">
+      <Card className="h-[520px] overflow-hidden">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ZoomIn className="h-5 w-5" />
@@ -461,7 +461,7 @@ export function CornerZoom({ sessionKey, onCornerChange }: CornerZoomProps) {
   }
 
   return (
-    <Card className="h-[520px]">
+    <Card className="h-[520px] overflow-hidden">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
@@ -516,16 +516,16 @@ export function CornerZoom({ sessionKey, onCornerChange }: CornerZoomProps) {
 
         {/* Zoomed Corner View */}
         {isLoading ? (
-          <div className="h-[380px] flex items-center justify-center">
+          <div className="h-[280px] flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
               <p className="text-muted-foreground text-sm">Loading racing lines...</p>
             </div>
           </div>
         ) : corners.length > 0 ? (
-          <svg ref={mainSvgRef} width="100%" height={380} />
+          <svg ref={mainSvgRef} width="100%" height={280} />
         ) : (
-          <div className="h-[380px] flex items-center justify-center">
+          <div className="h-[280px] flex items-center justify-center">
             <p className="text-muted-foreground text-sm">Loading track data...</p>
           </div>
         )}
