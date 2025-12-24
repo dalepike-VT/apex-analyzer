@@ -292,9 +292,9 @@ export function CornerZoom({ sessionKey, onCornerChange }: CornerZoomProps) {
     const svg = d3.select(mainSvgRef.current);
     svg.selectAll('*').remove();
 
-    const margin = { top: 15, right: 15, bottom: 15, left: 15 };
+    const margin = { top: 10, right: 10, bottom: 10, left: 10 };
     const width = mainSvgRef.current.clientWidth - margin.left - margin.right;
-    const height = 280 - margin.top - margin.bottom;
+    const height = 200 - margin.top - margin.bottom;
 
     if (width <= 0 || height <= 0) return;
 
@@ -516,16 +516,16 @@ export function CornerZoom({ sessionKey, onCornerChange }: CornerZoomProps) {
 
         {/* Zoomed Corner View */}
         {isLoading ? (
-          <div className="h-[280px] flex items-center justify-center">
+          <div className="h-[200px] flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
               <p className="text-muted-foreground text-sm">Loading racing lines...</p>
             </div>
           </div>
         ) : corners.length > 0 ? (
-          <svg ref={mainSvgRef} width="100%" height={280} />
+          <svg ref={mainSvgRef} width="100%" height={200} />
         ) : (
-          <div className="h-[280px] flex items-center justify-center">
+          <div className="h-[200px] flex items-center justify-center">
             <p className="text-muted-foreground text-sm">Loading track data...</p>
           </div>
         )}
