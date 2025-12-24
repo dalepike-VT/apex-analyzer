@@ -66,9 +66,6 @@ function buildUrl(endpoint: string, params?: QueryParams): string {
 async function fetchApi<T>(endpoint: string, params?: QueryParams): Promise<T> {
   const url = buildUrl(endpoint, params);
 
-  // Debug logging
-  console.log('[OpenF1 API] Fetching:', url);
-
   const response = await fetch(url, {
     headers: {
       'Accept': 'application/json',

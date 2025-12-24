@@ -112,3 +112,25 @@ export function useWeather(sessionKey: number | null) {
     enabled: sessionKey !== null,
   });
 }
+
+/**
+ * Hook to fetch position data for a session
+ */
+export function usePositions(sessionKey: number | null) {
+  return useQuery({
+    queryKey: ['positions', sessionKey],
+    queryFn: () => openf1.getPositions(sessionKey!),
+    enabled: sessionKey !== null,
+  });
+}
+
+/**
+ * Hook to fetch interval data for a session
+ */
+export function useIntervals(sessionKey: number | null) {
+  return useQuery({
+    queryKey: ['intervals', sessionKey],
+    queryFn: () => openf1.getIntervals(sessionKey!),
+    enabled: sessionKey !== null,
+  });
+}

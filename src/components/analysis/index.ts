@@ -4,3 +4,6 @@ export { LapTimesTable } from './LapTimesTable';
 export { SectorChart } from './SectorChart';
 export { SpeedTrace } from './SpeedTrace';
 export { CornerAnalysis } from './CornerAnalysis';
+export { PitStopAnalysis } from './PitStopAnalysis';
+export { RacePositionChart } from './RacePositionChart';
+export { TireStrategy } from './TireStrategy';

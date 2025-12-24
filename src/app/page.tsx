@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { YearSelect, MeetingSelect, SessionSelect } from '@/components/selectors';
-import { SessionInfo, LapTimesTable, SectorChart, SpeedTrace, CornerAnalysis } from '@/components/analysis';
+import { SessionInfo, LapTimesTable, SectorChart, SpeedTrace, CornerAnalysis, PitStopAnalysis, RacePositionChart, TireStrategy } from '@/components/analysis';
 import { TrackMap } from '@/components/track';
 import { WelcomeGuide } from '@/components/WelcomeGuide';
 import type { Meeting, Session } from '@/lib/openf1';
@@ -146,6 +146,15 @@ export default function Home() {
                 />
               </div>
             </div>
+
+            {/* Race Position & Tire Strategy */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <RacePositionChart sessionKey={sessionKey} />
+              <TireStrategy sessionKey={sessionKey} />
+            </div>
+
+            {/* Pit Stop Analysis */}
+            <PitStopAnalysis sessionKey={sessionKey} />
 
             {/* Lap Times Table */}
             <LapTimesTable sessionKey={sessionKey} />

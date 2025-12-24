@@ -64,28 +64,16 @@ export function TrackMap({ sessionKey, onCornerSelect }: TrackMapProps) {
         const startStr = lapStart.toISOString().slice(0, 19);
         const endStr = lapEnd.toISOString().slice(0, 19);
 
-        console.log('[TrackMap] Fetching location for:', {
-          sessionKey,
-          driver: selectedDriver,
-          lap: fastestLap.lap_number,
-          startStr,
-          endStr
-        });
-
         // Fetch location data with time bounds
         const locationData = await openf1.getLocation(sessionKey, selectedDriver, {
           'date>=': startStr,
           'date<=': endStr,
         });
 
-        console.log('[TrackMap] Got location data:', locationData.length, 'points');
-
         // Filter out points with zero coordinates (invalid data)
         const validData = locationData.filter(
           (loc) => loc.x !== 0 || loc.y !== 0
         );
-
-        console.log('[TrackMap] Valid (non-zero) points:', validData.length);
 
         if (validData.length === 0) {
           setError('No track data available for this lap');
@@ -115,12 +103,13 @@ export function TrackMap({ sessionKey, onCornerSelect }: TrackMapProps) {
     fetchLocationData();
   }, [sessionKey, selectedDriver, fastestLap]);
 
+  // Get driver for display
+  const selectedDriverInfo = drivers?.find((d) => d.driver_number === selectedDriver);
+  const driverColor = selectedDriverInfo ? `#${selectedDriverInfo.team_colour}` : '#ef4444';
+
   // Draw the track
   useEffect(() => {
     if (!svgRef.current || trackPoints.length === 0) return;
-
-    console.log('[TrackMap] Drawing track with', trackPoints.length, 'points');
-    console.log('[TrackMap] First few points:', trackPoints.slice(0, 5));
 
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();
@@ -129,12 +118,7 @@ export function TrackMap({ sessionKey, onCornerSelect }: TrackMapProps) {
     const width = svgRef.current.clientWidth - margin.left - margin.right;
     const height = 350 - margin.top - margin.bottom;
 
-    console.log('[TrackMap] SVG dimensions:', { width, height, clientWidth: svgRef.current.clientWidth });
-
-    if (width <= 0 || height <= 0) {
-      console.warn('[TrackMap] Invalid dimensions, skipping render');
-      return;
-    }
+    if (width <= 0 || height <= 0) return;
 
     const g = svg
       .append('g')
@@ -144,27 +128,16 @@ export function TrackMap({ sessionKey, onCornerSelect }: TrackMapProps) {
     const xExtent = d3.extent(trackPoints, (d) => d.x) as [number, number];
     const yExtent = d3.extent(trackPoints, (d) => d.y) as [number, number];
 
-    console.log('[TrackMap] Extents:', { xExtent, yExtent });
-
     // Create scales with aspect ratio preservation
     const xRange = xExtent[1] - xExtent[0];
     const yRange = yExtent[1] - yExtent[0];
     const scale = Math.min(width / xRange, height / yRange) * 0.9;
-
-    console.log('[TrackMap] Scale calc:', { xRange, yRange, scale });
 
     const xCenter = (xExtent[0] + xExtent[1]) / 2;
     const yCenter = (yExtent[0] + yExtent[1]) / 2;
 
     const xScale = (x: number) => (x - xCenter) * scale + width / 2;
     const yScale = (y: number) => -(y - yCenter) * scale + height / 2; // Flip Y
-
-    // Test the scales with first point
-    if (trackPoints.length > 0) {
-      const testX = xScale(trackPoints[0].x);
-      const testY = yScale(trackPoints[0].y);
-      console.log('[TrackMap] First point scaled:', { testX, testY });
-    }
 
     // Draw track outline
     const line = d3
@@ -173,65 +146,56 @@ export function TrackMap({ sessionKey, onCornerSelect }: TrackMapProps) {
       .y((d) => yScale(d.y))
       .curve(d3.curveCatmullRom.alpha(0.5));
 
-    const pathData = line(trackPoints);
-    console.log('[TrackMap] Path data length:', pathData?.length, 'first 200 chars:', pathData?.slice(0, 200));
-
     // Track background (wider, darker)
     g.append('path')
       .datum(trackPoints)
       .attr('d', line)
       .attr('fill', 'none')
       .attr('stroke', '#374151')
-      .attr('stroke-width', 12)
+      .attr('stroke-width', 14)
       .attr('stroke-linecap', 'round')
       .attr('stroke-linejoin', 'round');
 
-    // Track surface
+    // Track surface (kerbs simulation)
     g.append('path')
       .datum(trackPoints)
       .attr('d', line)
       .attr('fill', 'none')
-      .attr('stroke', '#6b7280')
-      .attr('stroke-width', 8)
+      .attr('stroke', '#4b5563')
+      .attr('stroke-width', 10)
       .attr('stroke-linecap', 'round')
-      .attr('stroke-linejoin', 'round')
-      .attr('opacity', 0.5);
+      .attr('stroke-linejoin', 'round');
 
-    // Racing line (team color or red default)
+    // Racing line (driver's team color)
     g.append('path')
       .datum(trackPoints)
       .attr('d', line)
       .attr('fill', 'none')
-      .attr('stroke', '#ef4444')
-      .attr('stroke-width', 2)
+      .attr('stroke', driverColor)
+      .attr('stroke-width', 3)
       .attr('stroke-linecap', 'round')
       .attr('stroke-linejoin', 'round');
-
-    // Debug: draw small dots at each point to verify data
-    trackPoints.forEach((point, i) => {
-      if (i % 10 === 0) { // Every 10th point
-        g.append('circle')
-          .attr('cx', xScale(point.x))
-          .attr('cy', yScale(point.y))
-          .attr('r', 2)
-          .attr('fill', '#3b82f6')
-          .attr('opacity', 0.5);
-      }
-    });
 
     // Start/finish marker (first point)
     if (trackPoints.length > 0) {
-      g.append('circle')
-        .attr('cx', xScale(trackPoints[0].x))
-        .attr('cy', yScale(trackPoints[0].y))
-        .attr('r', 6)
-        .attr('fill', '#22c55e');
+      // Checkered flag effect
+      g.append('rect')
+        .attr('x', xScale(trackPoints[0].x) - 12)
+        .attr('y', yScale(trackPoints[0].y) - 6)
+        .attr('width', 24)
+        .attr('height', 12)
+        .attr('fill', '#ffffff')
+        .attr('stroke', '#000000')
+        .attr('stroke-width', 1)
+        .attr('rx', 2);
 
       g.append('text')
-        .attr('x', xScale(trackPoints[0].x) + 10)
-        .attr('y', yScale(trackPoints[0].y) + 4)
-        .attr('font-size', '11px')
-        .attr('fill', 'currentColor')
+        .attr('x', xScale(trackPoints[0].x))
+        .attr('y', yScale(trackPoints[0].y) + 3)
+        .attr('text-anchor', 'middle')
+        .attr('font-size', '8px')
+        .attr('font-weight', 'bold')
+        .attr('fill', '#000000')
         .text('S/F');
     }
 
@@ -266,9 +230,9 @@ export function TrackMap({ sessionKey, onCornerSelect }: TrackMapProps) {
         .append('circle')
         .attr('cx', xScale(point.x))
         .attr('cy', yScale(point.y))
-        .attr('r', 10)
-        .attr('fill', 'hsl(var(--background))')
-        .attr('stroke', 'hsl(var(--primary))')
+        .attr('r', 11)
+        .attr('fill', '#1f2937')
+        .attr('stroke', '#f97316')
         .attr('stroke-width', 2);
 
       cornerGroup
@@ -278,13 +242,10 @@ export function TrackMap({ sessionKey, onCornerSelect }: TrackMapProps) {
         .attr('text-anchor', 'middle')
         .attr('font-size', '10px')
         .attr('font-weight', 'bold')
-        .attr('fill', 'hsl(var(--primary))')
+        .attr('fill', '#f97316')
         .text(cornerNum + 1);
     });
-  }, [trackPoints, onCornerSelect]);
-
-  // Get driver for display
-  const selectedDriverInfo = drivers?.find((d) => d.driver_number === selectedDriver);
+  }, [trackPoints, onCornerSelect, driverColor]);
 
   if (!sessionKey) {
     return (
